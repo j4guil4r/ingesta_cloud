@@ -20,7 +20,8 @@ def cargar_datos():
     for item in response['Items']:
         cinema_id = item['cinema_id']['S']
         cinema_name = item['cinema_name']['S']
-        address = item['address']['S']
+        # Reemplazamos saltos de línea en las direcciones por un espacio
+        address = item['address']['S'].replace("\n", " ")
         number_of_halls = item['number_of_halls']['N']
         data.append({
             "cinema_id": cinema_id,
