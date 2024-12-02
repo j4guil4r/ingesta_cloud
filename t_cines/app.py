@@ -1,5 +1,5 @@
 import boto3
-import json
+import csv
 
 # Crear cliente DynamoDB
 dynamodb = boto3.client('dynamodb', region_name='us-east-1')
@@ -23,28 +23,29 @@ def cargar_datos():
         # Reemplazamos saltos de línea en las direcciones por un espacio
         address = item['address']['S'].replace("\n", " ")
         number_of_halls = item['number_of_halls']['N']
-        data.append({
-            "cinema_id": cinema_id,
-            "cinema_name": cinema_name,
-            "address": address,
-            "number_of_halls": number_of_halls
-        })
+        data.append([cinema_id, cinema_name, address, number_of_halls])
     
     return data
 
-# Función para guardar los datos en un archivo JSON
+# Función para guardar los datos en un archivo CSV
 def guardar_en_s3(data, filename):
-    # Guardar en archivo JSON localmente primero
-    with open(filename, mode='w', encoding='utf-8') as file:
-        json.dump(data, file, indent=4)  # Guardar el JSON de manera legible
+    # Guardar en archivo CSV localmente primero
+    with open(filename, mode='w', newline='', encoding='utf-8') as file:
+        writer = csv.writer(file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+        writer.writerow(["cinema_id", "cinema_name", "address", "number_of_halls"])  # Cabecera
+        
+        # Escribir los datos asegurándose de que las direcciones con saltos de línea se manejen correctamente
+        for row in data:
+            # Asegurarse de que las direcciones con saltos de línea se mantengan en una sola celda
+            writer.writerow(row)
     
-    # Subir el archivo JSON a S3
+    # Subir el archivo CSV a S3
     s3.upload_file(filename, bucket_name, f"{folder_name}/{filename}")
 
 # Función principal de ingesta
 def ingesta_datos():
     data = cargar_datos()
-    guardar_en_s3(data, 't_cines_data.json')
+    guardar_en_s3(data, 't_cines_data.csv')
 
 if __name__ == "__main__":
     ingesta_datos()
